@@ -1,4 +1,7 @@
 import streamlit as st
+import os
+import torch
+import gdown
 from inference import load_model, generate_reply
 
 # --- Streamlit page setup ---
@@ -10,10 +13,23 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# --- Model loader with caching ---
+# --- Google Drive model setup ---
+MODEL_PATH = "models/best_model.pt"
+# your drive link converted to direct download
+GDRIVE_URL = "https://drive.google.com/uc?id=12QWyxckQwuOMCgjAhobyH5t3PJmcuse9"
+
 @st.cache_resource
 def load_chatbot():
-    with st.spinner("🤖 ماڈل لوڈ ہو رہا ہے، براہ کرم انتظار کریں..."):
+    # create models folder if not exists
+    os.makedirs("models", exist_ok=True)
+    
+    # download model if not present
+    if not os.path.exists(MODEL_PATH):
+        with st.spinner("🤖 ماڈل ڈاؤن لوڈ ہو رہا ہے، براہ کرم انتظار کریں..."):
+            gdown.download(GDRIVE_URL, MODEL_PATH, quiet=False)
+    
+    # now load using your existing function
+    with st.spinner("🤖 ماڈل لوڈ ہو رہا ہے..."):
         model, vocab, inv_vocab, device = load_model()
     return model, vocab, inv_vocab, device
 
@@ -41,7 +57,6 @@ if st.button("📨 بھیجیں"):
     if user_input.strip():
         with st.spinner("جواب تیار کیا جا رہا ہے..."):
             try:
-                # use existing inference version (no mode argument)
                 reply = generate_reply(user_input, model, vocab, inv_vocab, device)
                 st.session_state.history.append(("👤 صارف:", user_input))
                 st.session_state.history.append(("🤖 چیٹ بوٹ:", reply))
